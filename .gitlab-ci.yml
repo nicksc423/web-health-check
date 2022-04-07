@@ -1,0 +1,43 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  tags:
+    - shell
+  variables:
+    IMAGE: ${ACR_REGISTRY_NAME}.azurecr.io/${CI_PROJECT_PATH}:${CI_COMMIT_TAG}
+  script:
+    - docker login ${ACR_REGISTRY_NAME}.azurecr.io -u ${ACR_REGISTRY_NAME} -u ${ACR_REGISTRY_USERNAME} -p ${ACR_REGISTRY_PASSWORD}
+    - docker build -t "$IMAGE" .
+    - docker push $IMAGE
+  rules:
+    - if: $CI_COMMIT_TAG != null
+
+deploy:
+  stage: deploy
+  environment:
+    name: production
+  tags:
+    - shell
+  image:
+    name: alpine/helm:3.5.1
+    entrypoint: [""]
+  variables:
+    TAG: ${CI_COMMIT_TAG}
+    NAMESPACE: app
+    SERVICE_NAME: "web-health-check"
+    CHART_PATH: "cd/web-health-check"
+  before_script:
+    - mkdir .kube
+    - echo "$KUBECONFIG" > .kube/config
+    - chmod 600 .kube/config
+    - echo "$HELM_VALUES" > $CHART_PATH/values.yaml
+  needs:
+    - build
+  script:
+    - helm upgrade -i $SERVICE_NAME -f $CHART_PATH/values.yaml $CHART_PATH --set image.tag=$TAG -n $NAMESPACE --kubeconfig=".kube/config"
+  rules:
+    - if: $CI_COMMIT_TAG != null
+      when: manual

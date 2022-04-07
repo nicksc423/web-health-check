@@ -1,0 +1,14 @@
+{{- $root := . -}}
+{{- $fullName := .Release.Name -}}
+{{- if .Values.configmap -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-configmap
+  labels:
+  {{- include "service.labels" $root | nindent 4 }}
+data:
+  {{- range $name, $value := .Values.configmap }}
+    {{ $name }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}

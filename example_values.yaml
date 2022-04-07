@@ -1,0 +1,35 @@
+replicaCount: 1
+
+image:
+  repository: company.azurecr.io/app/web-health-check
+  pullPolicy: IfNotPresent
+  tag: "1.0.0"
+
+imagePullSecrets: []
+nameOverride: "web-health-check"
+fullnameOverride: "web-health-check"
+
+podAnnotations:
+  prometheus.io/port: "8080"
+  prometheus.io/scrape: "true"
+  prometheus.io/path: /metrics
+
+podSecurityContext: {}
+
+securityContext:
+  capabilities:
+    drop: [ "CAP_NET_RAW" ]
+  allowPrivilegeEscalation: false
+  privileged: false
+
+autoscaling:
+  enabled: false
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "web-health-check"
